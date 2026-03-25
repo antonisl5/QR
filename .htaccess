@@ -1,0 +1,40 @@
+# .htaccess
+# Server-level security hardening for the SaaS Platform
+
+# Prevent directory browsing
+Options -Indexes
+
+# Protect sensitive directories from direct web access
+# Users cannot type example.com/includes/config.php
+# However, PHP's require_once works internally on the filesystem.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(includes|scripts|database)/ - [F,L]
+</IfModule>
+
+# Block access to environment variables, logs, and Git files
+<FilesMatch "^\.env|^\.git|\.log$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Enforce secure caching for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Basic security headers
+<IfModule mod_headers.c>
+    # Prevent MIME-sniffing
+    Header set X-Content-Type-Options "nosniff"
+    # Enable XSS protection filter in older browsers
+    Header set X-XSS-Protection "1; mode=block"
+    # Prevent clickjacking by disallowing framing
+    Header always append X-Frame-Options SAMEORIGIN
+</IfModule>

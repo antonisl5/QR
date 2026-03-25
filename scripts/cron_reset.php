@@ -12,9 +12,11 @@
 declare(strict_types=1);
 
 // This script is meant to be run via CLI. Prevent execution from the web browser if necessary.
-if (php_sapi_name() !== 'cli' && !isset($_GET['force_run_secret'])) {
+// We check against a specific secret value to prevent unauthorized web execution.
+$cronSecret = getenv('CRON_SECRET') ?: 'ChangeMeInProduction123!';
+if (php_sapi_name() !== 'cli' && (!isset($_GET['force_run_secret']) || $_GET['force_run_secret'] !== $cronSecret)) {
     http_response_code(403);
-    die("This script can only be run from the command line.");
+    die("This script can only be run from the command line or with a valid secret.");
 }
 
 // Ensure error reporting is visible for cron logs
