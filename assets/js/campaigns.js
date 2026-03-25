@@ -65,10 +65,13 @@ $(document).ready(function() {
                     orderable: false,
                     render: function(data, type, row) {
                         return `
-                            <button class="btn btn-sm btn-outline-primary action-btn me-1 edit-btn" data-id="${row.id}">
+                            <button class="btn btn-sm btn-outline-success action-btn me-1 btn-generate-batch" data-id="${row.id}" data-title="${row.title}" title="Δημιουργία & Εκτύπωση">
+                                <i class="ri-printer-line"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary action-btn me-1 edit-btn" data-id="${row.id}" title="Επεξεργασία">
                                 <i class="ri-edit-line"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger action-btn delete-btn" data-id="${row.id}">
+                            <button class="btn btn-sm btn-outline-danger action-btn delete-btn" data-id="${row.id}" title="Διαγραφή">
                                 <i class="ri-delete-bin-line"></i>
                             </button>
                         `;

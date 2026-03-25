@@ -225,6 +225,7 @@ $pageTitle = 'Διαχείριση Καμπανιών';
 
     <!-- Custom Campaigns JS -->
     <script src="../assets/js/campaigns.js"></script>
+    <script src="../assets/js/campaign_export.js"></script>
 
 </body>
 </html>

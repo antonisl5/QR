@@ -1,0 +1,220 @@
+/* assets/css/print.css */
+
+/* Reset basic styles for print */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #fff;
+    color: #000;
+    font-family: Arial, sans-serif;
+}
+
+/* Hide everything except the print container */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #print-container, #print-container * {
+        visibility: visible;
+    }
+
+    #print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Remove default browser margins and set paper size */
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+
+    /* Enforce strict background printing across browsers */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Hide the "Print this page" button during printing */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Grid layout for an A4 page (e.g., 2x4 = 8 coupons per page) */
+    .coupon-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 10mm;
+        width: 100%;
+        height: calc(297mm - 20mm); /* A4 height minus top/bottom margins */
+        box-sizing: border-box;
+        page-break-after: always; /* Ensure next grid goes to next sheet */
+    }
+
+    /* Individual Coupon Styling for Print */
+    .print-coupon {
+        width: 100%;
+        height: 100%;
+        border: 2px dashed #ccc; /* Cut-out guide */
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        page-break-inside: avoid; /* Prevent splitting a coupon across pages */
+        box-sizing: border-box;
+        padding: 5mm;
+    }
+
+    .print-coupon .coupon-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15; /* Subtle background pattern */
+    }
+
+    .print-coupon .brand-logo {
+        max-width: 60px;
+        margin-bottom: 5mm;
+    }
+
+    .print-coupon .campaign-title {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 2mm;
+        color: #333;
+    }
+
+    .print-coupon .discount-text {
+        font-size: 18pt;
+        font-weight: 900;
+        color: #e63946;
+        margin-bottom: 5mm;
+    }
+
+    /* The canvas rendered by qrcode.js */
+    .print-coupon .qr-code-container canvas,
+    .print-coupon .qr-code-container img {
+        display: block;
+        margin: 0 auto;
+        border: 4px solid #fff;
+        border-radius: 4px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2); /* Shadow prints nicely if exact is on */
+        width: 120px !important;
+        height: 120px !important;
+    }
+
+    .print-coupon .uuid-text {
+        font-family: monospace;
+        font-size: 7pt;
+        color: #666;
+        margin-top: 3mm;
+        word-break: break-all;
+    }
+}
+
+/* Screen styles for preview before printing */
+@media screen {
+    body {
+        background-color: #f4f6f9;
+        padding: 2rem;
+    }
+
+    .print-controls {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    #print-container {
+        background: white;
+        max-width: 210mm; /* A4 width */
+        margin: 0 auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        padding: 10mm;
+    }
+
+    .coupon-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10mm;
+        margin-bottom: 20mm;
+        border-bottom: 2px dashed #ddd;
+        padding-bottom: 20mm;
+    }
+
+    .print-coupon {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 5mm;
+        height: 250px; /* fixed height for preview */
+    }
+
+    .print-coupon .coupon-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15;
+    }
+
+    .print-coupon .brand-logo {
+        max-width: 60px;
+        margin-bottom: 10px;
+    }
+
+    .print-coupon .campaign-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .print-coupon .discount-text {
+        font-size: 24px;
+        font-weight: 900;
+        color: #e63946;
+        margin-bottom: 10px;
+    }
+
+    .print-coupon .qr-code-container canvas,
+    .print-coupon .qr-code-container img {
+        display: block;
+        margin: 0 auto;
+        border: 4px solid #fff;
+        border-radius: 4px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+
+    .print-coupon .uuid-text {
+        font-family: monospace;
+        font-size: 10px;
+        color: #666;
+        margin-top: 5px;
+    }
+}

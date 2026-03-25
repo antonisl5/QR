@@ -1,1 +1,73 @@
-[Wed Mar 25 19:19:27 2026] Failed to listen on localhost:8000 (reason: Address already in use)
+[Wed Mar 25 19:57:49 2026] PHP 8.3.6 Development Server (http://localhost:8000) started
+[Wed Mar 25 19:58:43 2026] [::1]:52072 Accepted
+[Wed Mar 25 19:58:43 2026] [::1]:52072 [200]: GET /public/login.php
+[Wed Mar 25 19:58:43 2026] [::1]:52072 Closing
+[Wed Mar 25 19:58:43 2026] [::1]:52082 Accepted
+[Wed Mar 25 19:58:43 2026] [::1]:52082 [200]: GET /assets/js/login.js
+[Wed Mar 25 19:58:43 2026] [::1]:52082 Closing
+[Wed Mar 25 19:58:45 2026] [::1]:58890 Accepted
+[Wed Mar 25 19:58:45 2026] [::1]:58890 [401]: POST /api/login.php
+[Wed Mar 25 19:58:45 2026] [::1]:58890 Closing
+[Wed Mar 25 19:58:46 2026] [::1]:58900 Accepted
+[Wed Mar 25 19:58:46 2026] [::1]:58900 [401]: GET /admin/print_export.php?campaign_id=1
+[Wed Mar 25 19:58:46 2026] [::1]:58900 Closing
+[Wed Mar 25 19:59:53 2026] [::1]:60674 Accepted
+[Wed Mar 25 19:59:53 2026] [::1]:60674 [200]: GET /public/login.php
+[Wed Mar 25 19:59:53 2026] [::1]:60674 Closing
+[Wed Mar 25 19:59:53 2026] [::1]:60684 Accepted
+[Wed Mar 25 19:59:53 2026] [::1]:60684 [200]: GET /assets/js/login.js
+[Wed Mar 25 19:59:53 2026] [::1]:60684 Closing
+[Wed Mar 25 19:59:53 2026] [::1]:60694 Accepted
+[Wed Mar 25 19:59:53 2026] [::1]:60694 [401]: POST /api/login.php
+[Wed Mar 25 19:59:53 2026] [::1]:60694 Closing
+[Wed Mar 25 19:59:54 2026] [::1]:53676 Accepted
+[Wed Mar 25 19:59:54 2026] [::1]:53676 [401]: GET /api/generate_batch.php
+[Wed Mar 25 19:59:54 2026] [::1]:53676 Closing
+[Wed Mar 25 19:59:54 2026] [::1]:53680 Accepted
+[Wed Mar 25 19:59:54 2026] [::1]:53680 [401]: POST /api/generate_batch.php
+[Wed Mar 25 19:59:54 2026] [::1]:53680 Closing
+[Wed Mar 25 19:59:55 2026] [::1]:53682 Accepted
+[Wed Mar 25 19:59:55 2026] [::1]:53682 [401]: GET /admin/print_export.php?campaign_id=1
+[Wed Mar 25 19:59:55 2026] [::1]:53682 Closing
+[Wed Mar 25 20:00:35 2026] [::1]:44052 Accepted
+[Wed Mar 25 20:00:35 2026] [::1]:44052 [200]: GET /public/login.php
+[Wed Mar 25 20:00:35 2026] [::1]:44052 Closing
+[Wed Mar 25 20:00:35 2026] [::1]:44054 Accepted
+[Wed Mar 25 20:00:35 2026] [::1]:44054 [200]: GET /assets/js/login.js
+[Wed Mar 25 20:00:35 2026] [::1]:44054 Closing
+[Wed Mar 25 20:00:35 2026] [::1]:44064 Accepted
+[Wed Mar 25 20:00:35 2026] [::1]:44064 [401]: POST /api/login.php
+[Wed Mar 25 20:00:35 2026] [::1]:44064 Closing
+[Wed Mar 25 20:00:36 2026] [::1]:44072 Accepted
+[Wed Mar 25 20:00:36 2026] [::1]:44072 [401]: GET /admin/print_export.php?campaign_id=1
+[Wed Mar 25 20:00:36 2026] [::1]:44072 Closing
+[Wed Mar 25 20:01:05 2026] [::1]:35348 Accepted
+[Wed Mar 25 20:01:05 2026] [::1]:35348 [200]: GET /public/login.php
+[Wed Mar 25 20:01:05 2026] [::1]:35348 Closing
+[Wed Mar 25 20:01:05 2026] [::1]:35350 Accepted
+[Wed Mar 25 20:01:05 2026] [::1]:35350 [200]: GET /assets/js/login.js
+[Wed Mar 25 20:01:05 2026] [::1]:35350 Closing
+[Wed Mar 25 20:01:05 2026] [::1]:35358 Accepted
+[Wed Mar 25 20:01:05 2026] [::1]:35358 [401]: POST /api/login.php
+[Wed Mar 25 20:01:05 2026] [::1]:35358 Closing
+[Wed Mar 25 20:01:06 2026] [::1]:35360 Accepted
+[Wed Mar 25 20:01:06 2026] [::1]:35360 [401]: GET /api/generate_batch.php
+[Wed Mar 25 20:01:06 2026] [::1]:35360 Closing
+[Wed Mar 25 20:01:06 2026] [::1]:35366 Accepted
+[Wed Mar 25 20:01:06 2026] [::1]:35366 [401]: POST /api/generate_batch.php
+[Wed Mar 25 20:01:06 2026] [::1]:35366 Closing
+[Wed Mar 25 20:01:07 2026] [::1]:35372 Accepted
+[Wed Mar 25 20:01:07 2026] [::1]:35372 [401]: GET /admin/print_export.php?campaign_id=1
+[Wed Mar 25 20:01:07 2026] [::1]:35372 Closing
+[Wed Mar 25 20:01:48 2026] [::1]:44764 Accepted
+[Wed Mar 25 20:01:48 2026] [::1]:44764 [200]: GET /public/login.php
+[Wed Mar 25 20:01:48 2026] [::1]:44764 Closing
+[Wed Mar 25 20:01:48 2026] [::1]:44768 Accepted
+[Wed Mar 25 20:01:48 2026] [::1]:44768 [200]: GET /assets/js/login.js
+[Wed Mar 25 20:01:48 2026] [::1]:44768 Closing
+[Wed Mar 25 20:01:48 2026] [::1]:44770 Accepted
+[Wed Mar 25 20:01:48 2026] [::1]:44770 [401]: POST /api/login.php
+[Wed Mar 25 20:01:48 2026] [::1]:44770 Closing
+[Wed Mar 25 20:01:49 2026] [::1]:44786 Accepted
+[Wed Mar 25 20:01:49 2026] [::1]:44786 [401]: GET /admin/print_export.php?campaign_id=1
+[Wed Mar 25 20:01:49 2026] [::1]:44786 Closing
