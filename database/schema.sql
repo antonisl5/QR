@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `password_hash` VARCHAR(255) NOT NULL,
     `role` ENUM('admin', 'campaign_owner', 'store_staff') NOT NULL DEFAULT 'store_staff',
     `store_id` BIGINT UNSIGNED NULL DEFAULT NULL COMMENT 'Linked store for store_staff role',
+    `is_active` BOOLEAN DEFAULT TRUE COMMENT 'Soft delete: TRUE=active, FALSE=deactivated',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_user_store` FOREIGN KEY (`store_id`) REFERENCES `stores`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
