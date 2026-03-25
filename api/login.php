@@ -1,6 +1,7 @@
 <?php
-
 require_once '../includes/auth_guard.php';
+
+
 
 header('Content-Type: application/json');
 

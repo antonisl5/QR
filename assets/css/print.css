@@ -49,17 +49,15 @@ body {
     /* Grid layout for an A4 page (e.g., 2x4 = 8 coupons per page) */
     .coupon-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(4, 1fr);
-        gap: 10mm;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
         width: 100%;
-        height: calc(297mm - 20mm); /* A4 height minus top/bottom margins */
         box-sizing: border-box;
-        page-break-after: always; /* Ensure next grid goes to next sheet */
+        page-break-after: always;
     }
 
     /* Individual Coupon Styling for Print */
-    .print-coupon {
+    .coupon-card {
         width: 100%;
         height: 100%;
         border: 2px dashed #ccc; /* Cut-out guide */
@@ -76,7 +74,7 @@ body {
         padding: 5mm;
     }
 
-    .print-coupon .coupon-bg {
+    .coupon-card .coupon-bg {
         position: absolute;
         top: 0;
         left: 0;
@@ -88,19 +86,19 @@ body {
         opacity: 0.15; /* Subtle background pattern */
     }
 
-    .print-coupon .brand-logo {
+    .coupon-card .brand-logo {
         max-width: 60px;
         margin-bottom: 5mm;
     }
 
-    .print-coupon .campaign-title {
+    .coupon-card .campaign-title {
         font-size: 14pt;
         font-weight: bold;
         margin-bottom: 2mm;
         color: #333;
     }
 
-    .print-coupon .discount-text {
+    .coupon-card .discount-text {
         font-size: 18pt;
         font-weight: 900;
         color: #e63946;
@@ -108,8 +106,8 @@ body {
     }
 
     /* The canvas rendered by qrcode.js */
-    .print-coupon .qr-code-container canvas,
-    .print-coupon .qr-code-container img {
+    .coupon-card .qr-code-container canvas,
+    .coupon-card .qr-code-container img {
         display: block;
         margin: 0 auto;
         border: 4px solid #fff;
@@ -119,7 +117,7 @@ body {
         height: 120px !important;
     }
 
-    .print-coupon .uuid-text {
+    .coupon-card .uuid-text {
         font-family: monospace;
         font-size: 7pt;
         color: #666;
@@ -150,14 +148,14 @@ body {
 
     .coupon-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10mm;
-        margin-bottom: 20mm;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
         border-bottom: 2px dashed #ddd;
-        padding-bottom: 20mm;
+        padding-bottom: 20px;
     }
 
-    .print-coupon {
+    .coupon-card {
         border: 2px dashed #ccc;
         border-radius: 8px;
         position: relative;
@@ -171,7 +169,7 @@ body {
         height: 250px; /* fixed height for preview */
     }
 
-    .print-coupon .coupon-bg {
+    .coupon-card .coupon-bg {
         position: absolute;
         top: 0;
         left: 0;
@@ -183,27 +181,27 @@ body {
         opacity: 0.15;
     }
 
-    .print-coupon .brand-logo {
+    .coupon-card .brand-logo {
         max-width: 60px;
         margin-bottom: 10px;
     }
 
-    .print-coupon .campaign-title {
+    .coupon-card .campaign-title {
         font-size: 16px;
         font-weight: bold;
         margin-bottom: 5px;
         color: #333;
     }
 
-    .print-coupon .discount-text {
+    .coupon-card .discount-text {
         font-size: 24px;
         font-weight: 900;
         color: #e63946;
         margin-bottom: 10px;
     }
 
-    .print-coupon .qr-code-container canvas,
-    .print-coupon .qr-code-container img {
+    .coupon-card .qr-code-container canvas,
+    .coupon-card .qr-code-container img {
         display: block;
         margin: 0 auto;
         border: 4px solid #fff;
@@ -211,7 +209,7 @@ body {
         box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
 
-    .print-coupon .uuid-text {
+    .coupon-card .uuid-text {
         font-family: monospace;
         font-size: 10px;
         color: #666;

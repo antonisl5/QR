@@ -10,6 +10,7 @@ require_once '../includes/auth_guard.php';
 $user = require_role(['admin']);
 $pageTitle = 'Εκτύπωση Κουπονιών';
 require_once '../includes/header.php';
+echo '<link rel="stylesheet" href="../assets/css/print.css">';
 require_once 'sidebar.php';
 
 // Validate campaign ID
@@ -110,7 +111,7 @@ $pages = ceil($total_coupons / $coupons_per_page);
                 ?>
 
                 <!-- Individual Print Coupon Element -->
-                <div class="print-coupon" style="background-color: <?php echo htmlspecialchars($bg_color); ?>;">
+                <div class="coupon-card" style="background-color: <?php echo htmlspecialchars($bg_color); ?>;">
                     <?php if ($bg_image): ?>
                     <div class="coupon-bg" style="background-image: url('<?php echo htmlspecialchars($bg_image); ?>');"></div>
                     <?php endif; ?>
@@ -135,6 +136,9 @@ $pages = ceil($total_coupons / $coupons_per_page);
         <?php endfor; ?>
 
     </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- Render Logic -->
     <script>
