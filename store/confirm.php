@@ -2,34 +2,27 @@
 /**
  * store/confirm.php
  *
- * The Store Confirmation Interface.
- * Used by store staff to redeem activated coupons via scanning or manual entry.
+ * The Store Staff interface for confirming activated QR coupons.
+ * Features a real-time JS Camera QR Scanner and a manual fallback input.
  */
 
-// ---------------------------------------------------------
-// 1. MOCK SESSION & AUTHENTICATION
-// ---------------------------------------------------------
-// TODO: Replace with real JWT/Session Auth
-session_start();
-$_SESSION['user_id'] = 1;
-$_SESSION['store_id'] = 1;
-$_SESSION['role'] = 'store_staff';
+declare(strict_types=1);
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'store_staff'])) {
-    // In production, redirect to login
-    die("Μη εξουσιοδοτημένη πρόσβαση.");
-}
+require_once '../includes/auth_guard.php';
 
-$pageTitle = 'Εξαργύρωση Κουπονιού';
+// Require Store Staff role
+$user = require_role(['store_staff']);
+
+$pageTitle = 'Επιβεβαίωση Κουπονιού';
 ?>
 <!DOCTYPE html>
 <html lang="el" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title><?= htmlspecialchars($pageTitle) ?> | QR Coupon Store</title>
+    <title><?= htmlspecialchars($pageTitle) ?> | QR Coupon Platform</title>
 
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -45,175 +38,218 @@ $pageTitle = 'Εξαργύρωση Κουπονιού';
 
     <style>
         :root {
-            --bg-main: #f8f9fa;
+            --bg-main: #f8fafc;
+            --text-primary: #1e293b;
             --glass-bg: rgba(255, 255, 255, 0.9);
-            --border-color: #dee2e6;
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --primary-color: #3b82f6;
+            --scanner-border: #10b981;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --text-primary: #f8fafc;
+            --glass-bg: rgba(30, 41, 59, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            --scanner-border: #34d399;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-main);
-            color: #212529;
-            height: 100vh;
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Glassmorphism Navbar */
-        .store-navbar {
+        .glass-navbar {
             background-color: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .main-container {
-            flex: 1;
+            flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            padding: 2rem 1rem;
         }
 
         .scanner-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            box-shadow: var(--card-shadow);
             width: 100%;
             max-width: 500px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
         }
 
-        /* Scanner Camera Placeholder Area */
-        .camera-viewport {
-            height: 250px;
-            background-color: #1e293b;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .scanner-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
-            overflow: hidden;
+            padding: 1.5rem;
+            text-align: center;
         }
 
-        .camera-target-box {
-            width: 200px;
-            height: 200px;
-            border: 2px dashed rgba(255,255,255,0.5);
-            border-radius: 12px;
-            position: absolute;
+        .scanner-header h4 {
+            margin: 0;
+            font-weight: 700;
         }
 
-        /* Scanning laser animation */
-        .laser-line {
-            position: absolute;
-            top: 0;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background-color: #10b981;
-            box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
-            animation: scanLaser 2.5s infinite linear;
+        /* Camera Viewport Styling */
+        #qr-reader {
+            width: 100%;
+            min-height: 300px;
+            background-color: #000;
+            position: relative;
         }
 
-        @keyframes scanLaser {
-            0% { top: 10%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 90%; opacity: 0; }
+        /* Overrides for html5-qrcode built-in UI to look more modern */
+        #qr-reader__scan_region {
+            background-color: #000;
         }
 
-        .manual-entry-divider {
+        #qr-reader__dashboard {
+            padding: 1rem !important;
+            background-color: var(--glass-bg);
+        }
+
+        #qr-reader__dashboard_section_csr span,
+        #qr-reader__dashboard_section_swaplink {
+            color: var(--text-primary) !important;
+            text-decoration: none !important;
+        }
+
+        #qr-reader button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 500;
+        }
+
+        #qr-reader button:hover {
+            opacity: 0.9;
+        }
+
+        .manual-entry {
+            padding: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .divider {
             display: flex;
             align-items: center;
             text-align: center;
-            margin: 1.5rem 0;
-            color: #6c757d;
+            margin: 1rem 0;
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
 
-        .manual-entry-divider::before,
-        .manual-entry-divider::after {
+        .divider::before,
+        .divider::after {
             content: '';
             flex: 1;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid #cbd5e1;
         }
 
-        .manual-entry-divider:not(:empty)::before { margin-right: .5em; }
-        .manual-entry-divider:not(:empty)::after { margin-left: .5em; }
-
-        .uuid-input {
-            text-align: center;
-            font-family: monospace;
-            letter-spacing: 1px;
-            font-size: 1.1rem;
+        .divider:not(:empty)::before {
+            margin-right: .5em;
         }
+
+        .divider:not(:empty)::after {
+            margin-left: .5em;
+        }
+
+        [data-theme="dark"] .divider::before,
+        [data-theme="dark"] .divider::after {
+            border-bottom: 1px solid #334155;
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <header class="store-navbar fixed-top d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-            <i class="ri-store-2-line fs-4 text-primary"></i>
-            <span class="fw-bold fs-5">Κατάστημα #1</span>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg glass-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="ri-store-2-line fs-4 text-primary"></i>
+                <span class="fw-bold">Κατάστημα</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                    <i class="ri-user-line me-1"></i> Υπάλληλος
+                </span>
+                <!-- Logout Button clears the cookie via a simple script or dedicated endpoint, for now we just link to login -->
+                <button onclick="logout()" class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Αποσύνδεση">
+                    <i class="ri-logout-circle-r-line"></i>
+                </button>
+            </div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-dark border"><i class="ri-user-line me-1"></i> Ταμείο</span>
-        </div>
-    </header>
+    </nav>
 
-    <!-- Main Content -->
-    <main class="main-container mt-5">
-
+    <!-- Main Scanner Interface -->
+    <div class="main-container">
         <div class="scanner-card">
 
-            <!-- Camera Scanner Area (Visual Placeholder for Future JS Integration) -->
-            <div class="camera-viewport" id="scannerViewport">
-                <div class="camera-target-box">
-                    <div class="laser-line"></div>
-                </div>
-                <div class="text-center mt-3 z-1">
-                    <i class="ri-camera-lens-line fs-1 text-white opacity-75 mb-2"></i>
-                    <p class="mb-0 fw-medium">Κάμερα Ανενεργή</p>
-                    <small class="text-white-50">Εκκρεμεί ενσωμάτωση JS Scanner</small>
-                </div>
+            <div class="scanner-header">
+                <i class="ri-qr-scan-2-line fs-1 mb-2 d-block"></i>
+                <h4>Εξαργύρωση Κουπονιού</h4>
+                <p class="mb-0 text-white-50 small">Σαρώστε το ενεργοποιημένο QR του πελάτη</p>
             </div>
 
-            <div class="p-4">
-                <div class="text-center mb-4">
-                    <h5 class="fw-bold">Εξαργύρωση Κουπονιού</h5>
-                    <p class="text-muted small">Σαρώστε το ενεργοποιημένο QR code του πελάτη ή εισάγετε τον κωδικό χειροκίνητα.</p>
-                </div>
+            <!-- The Camera Viewport -->
+            <div id="qr-reader"></div>
 
-                <div class="d-grid gap-2">
-                    <button class="btn btn-primary btn-lg rounded-pill fw-bold" id="startScannerBtn">
-                        <i class="ri-qr-scan-2-line me-2"></i> Εκκίνηση Κάμερας
-                    </button>
-                </div>
+            <!-- Manual Fallback -->
+            <div class="manual-entry">
+                <div class="divider">Ή χειροκίνητη εισαγωγή</div>
 
-                <div class="manual-entry-divider text-uppercase small fw-bold">ή χειροκινητα</div>
-
-                <!-- Manual UUID Form -->
-                <form id="confirmForm">
-                    <div class="mb-3">
-                        <input type="text" class="form-control form-control-lg uuid-input bg-light" id="couponUuid" placeholder="π.χ. 123e4567-e89b-12d3-a456-426614174000" required autocomplete="off">
+                <form id="manualConfirmForm">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="ri-barcode-line"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="manualUuid" placeholder="Κωδικός UUID π.χ. 123e4567..." required autocomplete="off">
+                        <button class="btn btn-primary px-4" type="submit" id="confirmBtn">
+                            Επιβεβαίωση
+                        </button>
                     </div>
-                    <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill fw-bold" id="submitConfirmBtn">
-                        <i class="ri-check-double-line me-2"></i> Επιβεβαίωση Κωδικού
-                    </button>
                 </form>
-
             </div>
-        </div>
 
-    </main>
+        </div>
+    </div>
 
     <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
-    <script src="../assets/js/store_confirm.js"></script>
+
+    <!-- html5-qrcode CDN (The Camera Library) -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <!-- Scanner Logic -->
+    <script src="/assets/js/scanner.js"></script>
+
+    <script>
+        // Simple logout handler
+        function logout() {
+            // Delete the auth_token cookie by setting expiry to past
+            document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = '/public/login.php';
+        }
+    </script>
 </body>
 </html>

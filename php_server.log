@@ -71,3 +71,36 @@
 [Wed Mar 25 20:01:49 2026] [::1]:44786 Accepted
 [Wed Mar 25 20:01:49 2026] [::1]:44786 [401]: GET /admin/print_export.php?campaign_id=1
 [Wed Mar 25 20:01:49 2026] [::1]:44786 Closing
+[Wed Mar 25 20:16:49 2026] [::1]:57870 Accepted
+[Wed Mar 25 20:16:49 2026] [::1]:57870 [200]: GET /public/login.php
+[Wed Mar 25 20:16:49 2026] [::1]:57870 Closing
+[Wed Mar 25 20:16:49 2026] [::1]:57872 Accepted
+[Wed Mar 25 20:16:49 2026] [::1]:57872 [200]: GET /assets/js/login.js
+[Wed Mar 25 20:16:49 2026] [::1]:57872 Closing
+[Wed Mar 25 20:16:49 2026] [::1]:57880 Accepted
+[Wed Mar 25 20:16:49 2026] [::1]:57880 [401]: POST /api/login.php
+[Wed Mar 25 20:16:49 2026] [::1]:57880 Closing
+[Wed Mar 25 20:16:50 2026] [::1]:57884 Accepted
+[Wed Mar 25 20:16:50 2026] [::1]:57884 [401]: GET /store/confirm.php
+[Wed Mar 25 20:16:50 2026] [::1]:57884 Closing
+[Wed Mar 25 20:17:52 2026] [::1]:52794 Accepted
+[Wed Mar 25 20:17:52 2026] [::1]:52794 [200]: GET /public/login.php
+[Wed Mar 25 20:17:52 2026] [::1]:52794 Closing
+[Wed Mar 25 20:17:52 2026] [::1]:52804 Accepted
+[Wed Mar 25 20:17:52 2026] [::1]:52804 [200]: GET /assets/js/login.js
+[Wed Mar 25 20:17:52 2026] [::1]:52804 Closing
+[Wed Mar 25 20:17:53 2026] [::1]:52808 Accepted
+[Wed Mar 25 20:17:53 2026] [::1]:52808 [200]: POST /api/login.php
+[Wed Mar 25 20:17:53 2026] [::1]:52808 Closing
+[Wed Mar 25 20:17:53 2026] [::1]:52814 Accepted
+[Wed Mar 25 20:17:53 2026] [::1]:52814 [200]: GET /store/confirm.php
+[Wed Mar 25 20:17:53 2026] [::1]:52814 Closing
+[Wed Mar 25 20:17:53 2026] [::1]:52820 Accepted
+[Wed Mar 25 20:17:53 2026] [::1]:52820 [200]: GET /assets/js/scanner.js
+[Wed Mar 25 20:17:53 2026] [::1]:52820 Closing
+[Wed Mar 25 20:17:54 2026] [::1]:52822 Accepted
+[Wed Mar 25 20:17:54 2026] [::1]:52822 [200]: GET /store/confirm.php
+[Wed Mar 25 20:17:54 2026] [::1]:52822 Closing
+[Wed Mar 25 20:17:54 2026] [::1]:52838 Accepted
+[Wed Mar 25 20:17:54 2026] [::1]:52838 [200]: GET /assets/js/scanner.js
+[Wed Mar 25 20:17:54 2026] [::1]:52838 Closing
