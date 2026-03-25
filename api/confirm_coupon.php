@@ -17,6 +17,9 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth_guard.php';
+
 // Helper function to send JSON responses and exit.
 function sendResponse(bool $success, int $statusCode, string $message, array $data = []): void {
     http_response_code($statusCode);
@@ -35,21 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // ---------------------------------------------------------
-// 1. MOCK SESSION & AUTHENTICATION
+// 1. AUTHENTICATION (JWT)
 // ---------------------------------------------------------
-// TODO: Replace with real JWT/Session Auth verification logic
-$_SESSION = [
-    'user_id' => 1,          // Mock Staff ID
-    'store_id' => 1,         // Mock Store ID where staff works
-    'role' => 'store_staff'  // Mock Role
-];
+// Require valid JWT and explicitly allow store_staff and admin
+$user = require_role(['store_staff', 'admin']);
 
-$activeUserId = $_SESSION['user_id'] ?? null;
-$activeStoreId = $_SESSION['store_id'] ?? null;
-$activeRole = $_SESSION['role'] ?? null;
+$activeUserId = $user['user_id'] ?? null;
+$activeStoreId = $user['store_id'] ?? null;
+$activeRole = $user['role'] ?? null;
 
-if (!$activeUserId || !$activeStoreId || !in_array($activeRole, ['admin', 'store_staff'])) {
-    sendResponse(false, 401, 'Μη εξουσιοδοτημένη πρόσβαση.');
+// Admins don't have a store_id, so we only strictly require it for store_staff
+if (!$activeUserId || ($activeRole === 'store_staff' && !$activeStoreId)) {
+    sendResponse(false, 401, 'Μη έγκυρα στοιχεία χρήστη ή καταστήματος.');
 }
 
 // ---------------------------------------------------------
@@ -72,21 +72,8 @@ if (empty($uuid) || !is_string($uuid) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-
 // 3. DATABASE CONNECTION
 // ---------------------------------------------------------
 
-try {
-    $dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
-    $dbName = $_ENV['DB_NAME'] ?? 'qr_coupons';
-    $dbUser = $_ENV['DB_USER'] ?? 'root';
-    $dbPass = $_ENV['DB_PASS'] ?? '';
-
-    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
-} catch (PDOException $e) {
-    sendResponse(false, 500, 'Σφάλμα σύνδεσης με τη βάση δεδομένων.');
-}
+// Initialize Database Connection using the Singleton pattern
+$pdo = Database::getInstance()->getConnection();
 
 // ---------------------------------------------------------
 // 4. TRANSACTION & STATE MACHINE LOGIC
@@ -104,11 +91,9 @@ try {
             cam.id AS campaign_id,
             cam.is_active,
             cam.start_date,
-            cam.end_date,
-            u.store_id AS campaign_store_id
+            cam.end_date
         FROM coupons c
         JOIN campaigns cam ON c.campaign_id = cam.id
-        LEFT JOIN users u ON cam.user_id = u.id
         WHERE c.uuid = :uuid
         FOR UPDATE
     ");
@@ -119,14 +104,6 @@ try {
     if (!$coupon) {
         $pdo->rollBack();
         sendResponse(false, 404, 'Το κουπόνι δεν βρέθηκε.');
-    }
-
-    // Security Check: Does this coupon belong to the staff member's store?
-    // (Assuming the campaign owner is linked to the same store_id as the staff)
-    // If the role is admin, bypass this check.
-    if ($activeRole !== 'admin' && (int)$coupon['campaign_store_id'] !== (int)$activeStoreId) {
-        $pdo->rollBack();
-        sendResponse(false, 403, 'Δεν έχετε δικαίωμα να εξαργυρώσετε κουπόνια από άλλο κατάστημα.');
     }
 
     // Check Campaign Validity

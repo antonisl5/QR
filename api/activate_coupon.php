@@ -17,10 +17,12 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
+require_once __DIR__ . '/../includes/db.php';
+
 /**
  * Helper function to send JSON responses and exit.
  */
-function sendResponse(bool $success, int $statusCode, string $message, array $data = []): void {
+function sendResponse(bool $success, int $statusCode, string $message, array $data = []) {
     http_response_code($statusCode);
     echo json_encode([
         'success' => $success,
@@ -48,24 +50,8 @@ if (empty($uuid) || !is_string($uuid) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-
     sendResponse(false, 400, 'Μη έγκυρη μορφή κωδικού (UUID).');
 }
 
-// Initialize Database Connection (Stubbed logic based on standard PDO setup)
-try {
-    // Assuming a configuration helper or standard .env loader is available in production
-    $dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
-    $dbName = $_ENV['DB_NAME'] ?? 'qr_coupons';
-    $dbUser = $_ENV['DB_USER'] ?? 'root';
-    $dbPass = $_ENV['DB_PASS'] ?? '';
-
-    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false, // Enforce real prepared statements
-    ]);
-} catch (PDOException $e) {
-    // In production, log $e->getMessage() to a secure log file, never expose to frontend
-    sendResponse(false, 500, 'Σφάλμα σύνδεσης με τη βάση δεδομένων.');
-}
+// Initialize Database Connection using the Singleton pattern
+$pdo = Database::getInstance()->getConnection();
 
 // Start Transaction to handle race conditions and ensure data integrity
 try {
