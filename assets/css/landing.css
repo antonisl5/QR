@@ -1,0 +1,133 @@
+/* assets/css/landing.css */
+
+:root {
+    --bg-main: #f4f6f9;
+    --text-primary: #1e293b;
+    --primary-color: #3b82f6;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+}
+
+body.landing-body {
+    background-color: var(--bg-main);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+/* Container limits width to look good on desktop, while filling mobile */
+.mobile-container {
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    min-height: 100vh;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* Hero Section */
+.store-hero {
+    position: relative;
+    background: #e2e8f0;
+}
+
+.overlay-gradient {
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+.store-name {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: -0.5px;
+}
+
+/* Content Area */
+.content-wrapper {
+    min-height: 60vh;
+}
+
+/* Typography */
+.campaign-title {
+    font-size: 1.75rem;
+    line-height: 1.2;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.heartbeat {
+    animation: heartbeat 1.5s infinite;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    10% { transform: scale(1.05); }
+    20% { transform: scale(1); }
+    30% { transform: scale(1.05); }
+    40% { transform: scale(1); }
+    100% { transform: scale(1); }
+}
+
+.drop-shadow-md {
+    filter: drop-shadow(0 10px 15px rgba(16, 185, 129, 0.3));
+}
+
+.grayscale {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+/* Scanner Simulation */
+.scan-area {
+    position: relative;
+    user-select: none;
+}
+
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+
+.ls-2 {
+    letter-spacing: 2px;
+}
+
+/* SweetAlert overrides for mobile */
+.swal2-popup {
+    border-radius: 1rem !important;
+    font-family: 'Inter', sans-serif !important;
+}
