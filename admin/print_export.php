@@ -6,12 +6,11 @@
  * Uses qrcode.js to render real QR codes pointing to the landing page.
  */
 
-declare(strict_types=1);
-
 require_once '../includes/auth_guard.php';
-
-// Require Admin role
 $user = require_role(['admin']);
+$pageTitle = 'Εκτύπωση Κουπονιών';
+require_once '../includes/header.php';
+require_once 'sidebar.php';
 
 // Validate campaign ID
 $campaign_id = $_GET['campaign_id'] ?? null;
@@ -23,17 +22,8 @@ $campaign_id = (int)$campaign_id;
 
 try {
     // Database connection
-    $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
-    $dbName = getenv('DB_NAME') ?: 'qr_coupons';
-    $dbUser = getenv('DB_USER') ?: 'root';
-    $dbPass = getenv('DB_PASS') ?: '';
-
-    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    require_once '../includes/db.php';
+    $pdo = Database::getInstance()->getConnection();
 
     // Fetch Campaign Details
     $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? LIMIT 1");
@@ -70,22 +60,6 @@ try {
 $coupons_per_page = 8;
 $pages = ceil($total_coupons / $coupons_per_page);
 ?>
-<!DOCTYPE html>
-<html lang="el">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Εκτύπωση Κουπονιών - <?php echo htmlspecialchars($campaign['title']); ?></title>
-    <!-- Bootstrap 5 CSS (Used mainly for the screen preview button) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Custom Print CSS -->
-    <link rel="stylesheet" href="/assets/css/print.css">
-
-    <!-- qrcode.js library for rendering QR codes on canvas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-</head>
-<body>
 
     <!-- On-screen Print Controls (Hidden during actual print) -->
     <div class="print-controls no-print d-flex flex-column align-items-center justify-content-center">
@@ -190,5 +164,4 @@ $pages = ceil($total_coupons / $coupons_per_page);
             // setTimeout(() => window.print(), 1000);
         });
     </script>
-</body>
-</html>
+<?php require_once '../includes/footer.php'; ?>

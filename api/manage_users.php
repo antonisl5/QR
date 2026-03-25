@@ -24,30 +24,16 @@ function sendResponse($statusCode, $success, $message, $data = null) {
     exit;
 }
 
-// ----------------------------------------------------------------------------
-// [AUTHENTICATION STUB] - Replace with real JWT/.env authentication logic later
-// ----------------------------------------------------------------------------
-session_start();
-$_SESSION['user_id'] = 1; // MOCK Admin ID
-$_SESSION['role'] = 'admin'; // MOCK Admin Role
+require_once '../includes/auth_guard.php';
+$user = require_role(['admin']);
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    sendResponse(403, false, 'Forbidden: System Admin access required.');
-}
 
 // ----------------------------------------------------------------------------
 // DATABASE CONNECTION (PDO)
 // ----------------------------------------------------------------------------
 try {
-    $dsn = 'mysql:host=127.0.0.1;dbname=qr_coupons;charset=utf8mb4';
-    $db_user = 'root';
-    $db_pass = '';
-
-    $pdo = new PDO($dsn, $db_user, $db_pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false, // Essential for security
-    ]);
+    require_once '../includes/db.php';
+    $pdo = Database::getInstance()->getConnection();
 } catch (PDOException $e) {
     // In production, log $e->getMessage() securely.
     sendResponse(500, false, 'Database connection failed.');
@@ -284,7 +270,7 @@ function handleDeactivateUser(PDO $pdo, array $payload) {
     $id = (int)$payload['id'];
 
     // Safety check to prevent deactivating oneself
-    if ($id === $_SESSION['user_id']) {
+    if ($id === $user['user_id']) {
         sendResponse(403, false, 'You cannot deactivate your own administrative account.');
     }
 

@@ -24,15 +24,11 @@ function sendResponse(bool $success, int $statusCode, string $message, array $da
 }
 
 // ---------------------------------------------------------
-// 1. MOCK SESSION & AUTHENTICATION
-// ---------------------------------------------------------
-// TODO: Replace with real JWT/Session Auth
-session_start();
-$_SESSION['user_id'] = 1;
-$_SESSION['role'] = 'admin';
+require_once '../includes/auth_guard.php';
+$user = require_role(['admin', 'campaign_owner']);
+$activeUserId = $user['user_id'] ?? $user['id'];
+$activeRole = $user['role'];
 
-$activeUserId = $_SESSION['user_id'] ?? null;
-$activeRole = $_SESSION['role'] ?? null;
 
 if (!$activeUserId || !in_array($activeRole, ['admin', 'campaign_owner'])) {
     sendResponse(false, 401, 'Μη εξουσιοδοτημένη πρόσβαση.');
@@ -42,17 +38,8 @@ if (!$activeUserId || !in_array($activeRole, ['admin', 'campaign_owner'])) {
 // 2. DATABASE CONNECTION
 // ---------------------------------------------------------
 try {
-    $dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
-    $dbName = $_ENV['DB_NAME'] ?? 'qr_coupons';
-    $dbUser = $_ENV['DB_USER'] ?? 'root';
-    $dbPass = $_ENV['DB_PASS'] ?? '';
-
-    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    require_once '../includes/db.php';
+    $pdo = Database::getInstance()->getConnection();
 } catch (PDOException $e) {
     sendResponse(false, 500, 'Σφάλμα σύνδεσης με τη βάση δεδομένων.');
 }

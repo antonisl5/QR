@@ -3,6 +3,8 @@
 // Custom pure-PHP JWT Implementation & Auth Guard
 // STRICTLY NO FRAMEWORKS
 
+require_once __DIR__ . '/config.php';
+
 /**
  * Generate a JWT using HMAC-SHA256
  */

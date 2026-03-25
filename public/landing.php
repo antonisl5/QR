@@ -11,17 +11,8 @@ declare(strict_types=1);
 
 // Initialize Database Connection (Stubbed)
 try {
-    $dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
-    $dbName = $_ENV['DB_NAME'] ?? 'qr_coupons';
-    $dbUser = $_ENV['DB_USER'] ?? 'root';
-    $dbPass = $_ENV['DB_PASS'] ?? '';
-
-    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    require_once __DIR__ . '/../includes/db.php';
+    $pdo = Database::getInstance()->getConnection();
 } catch (PDOException $e) {
     die('Σφάλμα σύνδεσης με τη βάση δεδομένων.');
 }

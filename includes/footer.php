@@ -82,6 +82,8 @@
             }
         });
     </script>
+
+    <?php if (isset($extraScripts)) echo $extraScripts; ?>
 </div>
 </body>
 </html>
