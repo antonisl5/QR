@@ -16,6 +16,9 @@ require_once 'sidebar.php';
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="mb-0 fw-bold">Διαχείριση Καμπανιών</h4>
+            <button class="btn btn-success d-flex align-items-center gap-2 shadow-sm rounded-pill px-4 me-2" id="generateMultiBtn" disabled>
+                <i class="ri-qr-code-line"></i> <span>Δημιουργία Multi-QR</span>
+            </button>
             <button class="btn btn-primary d-flex align-items-center gap-2 shadow-sm rounded-pill px-4" id="addCampaignBtn">
                 <i class="ri-add-line"></i> <span>Νέα Καμπάνια</span>
             </button>
@@ -26,6 +29,8 @@ require_once 'sidebar.php';
                 <table id="campaignsTable" class="table table-hover align-middle w-100">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAllCampaigns" class="form-check-input"></th>
+                            <th>Εικόνα</th>
                             <th>Τίτλος</th>
                             <th>Περιγραφή</th>
                             <th>Ημ. Έναρξης</th>

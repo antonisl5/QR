@@ -13,37 +13,49 @@ require_once '../includes/header.php';
 echo '<link rel="stylesheet" href="../assets/css/print.css">';
 require_once 'sidebar.php';
 
-// Validate campaign ID
-$campaign_id = $_GET['campaign_id'] ?? null;
-if (!$campaign_id || !is_numeric($campaign_id)) {
+// Validate campaign IDs
+$campaign_ids_raw = $_GET['campaign_ids'] ?? $_GET['campaign_id'] ?? null;
+if (!$campaign_ids_raw) {
     die("Μη έγκυρο ID Καμπάνιας. Παρακαλώ επιστρέψτε και προσπαθήστε ξανά.");
 }
 
-$campaign_id = (int)$campaign_id;
+$campaign_ids = explode(',', $campaign_ids_raw);
+$campaign_ids = array_map('intval', $campaign_ids);
 
 try {
-    // Database connection
     require_once '../includes/db.php';
     $pdo = Database::getInstance()->getConnection();
 
-    // Fetch Campaign Details
+    // Fetch Campaign Details for the FIRST campaign to use its design
+    $first_campaign_id = $campaign_ids[0];
     $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? LIMIT 1");
-    $stmt->execute([$campaign_id]);
+    $stmt->execute([$first_campaign_id]);
     $campaign = $stmt->fetch();
 
     if (!$campaign) {
         die("Η καμπάνια δεν βρέθηκε.");
     }
 
-    // Fetch all Idle Coupons for this campaign
-    $stmt = $pdo->prepare("SELECT id, uuid FROM coupons WHERE campaign_id = ? AND status = 'idle' ORDER BY id ASC");
-    $stmt->execute([$campaign_id]);
+    // Determine Base URL
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $base_url = getenv('APP_URL') ?: "$protocol://$host";
+    $landing_url = rtrim($base_url, '/') . '/public/landing.php?uuid=';
+
+    // Fetch all Idle UUIDs for these campaigns
+    // Since one UUID is attached to multiple campaigns in a multi-QR,
+    // we want DISTINCT UUIDs that belong to ALL these selected campaigns?
+    // Actually, simply fetching DISTINCT UUIDs that belong to the first campaign is enough
+    // because they were generated as a batch.
+    $stmt = $pdo->prepare("SELECT DISTINCT uuid FROM coupons WHERE campaign_id = ? AND status = 'idle' ORDER BY id ASC");
+    $stmt->execute([$first_campaign_id]);
     $coupons = $stmt->fetchAll();
 
     $total_coupons = count($coupons);
     if ($total_coupons === 0) {
-        die("Δεν βρέθηκαν διαθέσιμα (idle) κουπόνια για αυτήν την καμπάνια. Παρακαλώ δημιουργήστε μια παρτίδα πρώτα.");
+        die("Δεν βρέθηκαν διαθέσιμα (idle) κουπόνια. Παρακαλώ δημιουργήστε μια παρτίδα πρώτα.");
     }
+
 
     // Determine Base URL for QR Codes (e.g., https://example.com/public/landing.php?uuid=)
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';

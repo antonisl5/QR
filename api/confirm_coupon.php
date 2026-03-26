@@ -60,64 +60,79 @@ if (!$activeUserId || ($activeRole === 'store_staff' && !$activeStoreId)) {
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true);
 
-// Fallback to standard $_POST if not sent as application/json
+$action = $postData['action'] ?? 'confirm';
 $uuid = $postData['uuid'] ?? $_POST['uuid'] ?? null;
+$coupon_id = $postData['coupon_id'] ?? $_POST['coupon_id'] ?? null;
 
-// Validate the UUID format (strict 36 characters, standard format)
-if (empty($uuid) || !is_string($uuid) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
-    sendResponse(false, 400, 'Μη έγκυρη μορφή κωδικού (UUID).');
-}
-
-// ---------------------------------------------------------
-// 3. DATABASE CONNECTION
-// ---------------------------------------------------------
-
-// Initialize Database Connection using the Singleton pattern
 $pdo = Database::getInstance()->getConnection();
 
-// ---------------------------------------------------------
-// 4. TRANSACTION & STATE MACHINE LOGIC
-// ---------------------------------------------------------
-
 try {
+    if ($action === 'fetch') {
+        if (empty($uuid)) {
+            sendResponse(false, 400, 'Το UUID είναι υποχρεωτικό για αναζήτηση.');
+        }
+
+        $storeFilter = "";
+        $params = [':uuid' => $uuid];
+        if ($activeRole !== 'admin' && $activeStoreId) {
+            $storeFilter = " AND (cam.store_id = :store_id OR cam.store_id IS NULL) ";
+            $params[':store_id'] = $activeStoreId;
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT
+                c.id as coupon_id, c.uuid, c.status, c.activated_at, c.confirmed_at,
+                cam.title as campaign_title
+            FROM coupons c
+            JOIN campaigns cam ON c.campaign_id = cam.id
+            WHERE c.uuid = :uuid AND cam.deleted_at IS NULL $storeFilter
+            ORDER BY c.status ASC
+        ");
+        $stmt->execute($params);
+        $couponsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!$couponsList) {
+            sendResponse(false, 404, 'Δεν βρέθηκαν προσφορές για αυτόν τον κωδικό που να αφορούν το κατάστημά σας.');
+        }
+
+        sendResponse(true, 200, 'Βρέθηκαν προσφορές.', ['coupons' => $couponsList]);
+    }
+
+    // Default action: 'confirm'
+    if (!$coupon_id) {
+        sendResponse(false, 400, 'Το ID κουπονιού είναι υποχρεωτικό.');
+    }
+
     $pdo->beginTransaction();
 
-    // Fetch the coupon and lock the row using FOR UPDATE
-    // This prevents double redemptions if the request is sent twice instantly
     $stmt = $pdo->prepare("
-        SELECT
-            c.id AS coupon_id,
-            c.status,
-            cam.id AS campaign_id,
-            cam.is_active,
-            cam.start_date,
-            cam.end_date
+        SELECT c.id as coupon_id, c.status, c.uuid, cam.is_active, cam.start_date, cam.end_date, cam.store_id
         FROM coupons c
         JOIN campaigns cam ON c.campaign_id = cam.id
-        WHERE c.uuid = :uuid
+        WHERE c.id = :coupon_id AND cam.deleted_at IS NULL
         FOR UPDATE
     ");
-    $stmt->execute([':uuid' => $uuid]);
-    $coupon = $stmt->fetch();
+    $stmt->execute([':coupon_id' => $coupon_id]);
+    $coupon = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Check if the coupon exists
     if (!$coupon) {
         $pdo->rollBack();
         sendResponse(false, 404, 'Το κουπόνι δεν βρέθηκε.');
     }
 
-    // Check Campaign Validity
+    if ($activeRole !== 'admin' && $activeStoreId) {
+        if ($coupon['store_id'] !== null && (int)$coupon['store_id'] !== (int)$activeStoreId) {
+            $pdo->rollBack();
+            sendResponse(false, 403, 'Δεν έχετε δικαίωμα εξαργύρωσης για αυτό το κουπόνι.');
+        }
+    }
+
     $currentTimestamp = date('Y-m-d H:i:s');
-    if (
-        (int)$coupon['is_active'] === 0 ||
-        $currentTimestamp < $coupon['start_date'] ||
-        $currentTimestamp > $coupon['end_date']
-    ) {
+    if ((int)$coupon['is_active'] === 0 || $currentTimestamp < $coupon['start_date'] || $currentTimestamp > $coupon['end_date']) {
         $pdo->rollBack();
         sendResponse(false, 403, 'Η καμπάνια για αυτό το κουπόνι δεν είναι ενεργή ή έχει λήξει.');
     }
 
-    // Evaluate Coupon State Machine
     if ($coupon['status'] === 'idle') {
         $pdo->rollBack();
         sendResponse(false, 400, 'Το κουπόνι δεν έχει ενεργοποιηθεί από τον πελάτη ακόμη.');
@@ -133,38 +148,27 @@ try {
         sendResponse(false, 500, 'Άγνωστη κατάσταση κουπονιού.');
     }
 
-    // Status is strictly 'activated'. Proceed to confirm/redeem.
-    $updateStmt = $pdo->prepare("
-        UPDATE coupons
-        SET status = 'confirmed', confirmed_at = NOW()
-        WHERE id = :coupon_id
-    ");
-    $updateStmt->execute([':coupon_id' => $coupon['coupon_id']]);
+    $updateStmt = $pdo->prepare("UPDATE coupons SET status = 'confirmed', confirmed_at = NOW() WHERE id = :coupon_id");
+    $updateStmt->execute([':coupon_id' => $coupon_id]);
 
-    // Insert Audit Log into coupon_events
     $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
-    $logStmt = $pdo->prepare("
-        INSERT INTO coupon_events (coupon_id, store_id, user_id, event_type, ip_address, user_agent)
-        VALUES (:coupon_id, :store_id, :user_id, 'confirmed', :ip_address, :user_agent)
-    ");
+    $logStmt = $pdo->prepare("INSERT INTO coupon_events (coupon_id, store_id, user_id, event_type, ip_address, user_agent) VALUES (:coupon_id, :store_id, :user_id, 'confirmed', :ip_address, :user_agent)");
     $logStmt->execute([
-        ':coupon_id' => $coupon['coupon_id'],
+        ':coupon_id' => $coupon_id,
         ':store_id'  => $activeStoreId,
         ':user_id'   => $activeUserId,
         ':ip_address'=> $ipAddress,
         ':user_agent'=> $userAgent
     ]);
 
-    // Commit the transaction
     $pdo->commit();
 
-    // Success Response
     sendResponse(true, 200, 'Επιτυχής εξαργύρωση! Το κουπόνι καταχωρήθηκε.', [
-        'uuid' => $uuid,
+        'coupon_id' => $coupon_id,
         'new_status' => 'confirmed',
-        'confirmed_at' => date('c') // ISO 8601 string
+        'confirmed_at' => date('c')
     ]);
 
 } catch (Exception $e) {

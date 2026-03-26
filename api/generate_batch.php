@@ -33,87 +33,67 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $raw_data = file_get_contents("php://input");
 $data = json_decode($raw_data, true);
 
-$campaign_id = $data['campaign_id'] ?? null;
+// Support both single campaign_id and an array of campaign_ids
+$campaign_ids = [];
+if (!empty($data['campaign_ids']) && is_array($data['campaign_ids'])) {
+    $campaign_ids = array_map('intval', $data['campaign_ids']);
+} elseif (!empty($data['campaign_id'])) {
+    $campaign_ids = [(int)$data['campaign_id']];
+}
+
 $quantity = $data['quantity'] ?? null;
 
 // Validation
-if (empty($campaign_id) || !is_numeric($campaign_id)) {
+if (empty($campaign_ids)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Μη έγκυρο ID καμπάνιας.']);
-    exit;
+    echo json_encode(['success' => false, 'error' => 'Παρακαλώ επιλέξτε τουλάχιστον μία καμπάνια.']);
+    die();
 }
 
-if (empty($quantity) || !is_numeric($quantity) || (int)$quantity <= 0 || (int)$quantity > 5000) {
+if (empty($quantity) || !is_numeric($quantity) || $quantity < 1 || $quantity > 5000) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Η ποσότητα πρέπει να είναι μεταξύ 1 και 5000.']);
-    exit;
+    echo json_encode(['success' => false, 'error' => 'Η ποσότητα πρέπει να είναι ένας αριθμός μεταξύ 1 και 5000.']);
+    die();
 }
 
 $quantity = (int)$quantity;
-$campaign_id = (int)$campaign_id;
-
-/**
- * Generates a UUID v4
- */
-function generate_uuid() {
-    return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-        mt_rand(0, 0xffff),
-        mt_rand(0, 0x0fff) | 0x4000,
-        mt_rand(0, 0x3fff) | 0x8000,
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-    );
-}
 
 try {
-    // Initialize Database Connection
     require_once '../includes/db.php';
     $pdo = Database::getInstance()->getConnection();
 
-    // Verify campaign exists
-    $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? LIMIT 1");
-    $stmt->execute([$campaign_id]);
-    if (!$stmt->fetch()) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Η καμπάνια δεν βρέθηκε.']);
-        exit;
-    }
-
-    // Begin Transaction for bulk insert
     $pdo->beginTransaction();
 
-    // Prepare the bulk insert query
-    // We will chunk the inserts if the quantity is very large to avoid hitting MySQL limits (e.g. max_allowed_packet)
-    $chunk_size = 500;
-    $total_inserted = 0;
-
-    while ($total_inserted < $quantity) {
-        $current_chunk = min($chunk_size, $quantity - $total_inserted);
-
-        $placeholders = [];
+    $total_generated = 0;
+    while ($quantity > 0) {
+        $currentBatchSize = min($quantity, 1000);
+        $placeholdersArr = [];
         $values = [];
 
-        for ($i = 0; $i < $current_chunk; $i++) {
-            $uuid = generate_uuid();
-            $placeholders[] = '(?, ?, ?)';
-            $values[] = $uuid;
-            $values[] = $campaign_id;
-            $values[] = 'idle'; // Initial state
+        for ($i = 0; $i < $currentBatchSize; $i++) {
+            $uuid = bin2hex(random_bytes(16));
+            foreach ($campaign_ids as $c_id) {
+                $placeholdersArr[] = '(?, ?, ?)';
+                $values[] = $uuid;
+                $values[] = $c_id;
+                $values[] = 'idle';
+            }
         }
 
-        $sql = "INSERT INTO coupons (uuid, campaign_id, status) VALUES " . implode(', ', $placeholders);
+        $sql = "INSERT INTO coupons (uuid, campaign_id, status) VALUES " . implode(', ', $placeholdersArr);
         $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
 
-        $total_inserted += $current_chunk;
+        $total_generated += $currentBatchSize;
+        $quantity -= $currentBatchSize;
     }
 
     $pdo->commit();
 
     echo json_encode([
         'success' => true,
-        'message' => "Επιτυχής δημιουργία $total_inserted κουπονιών.",
-        'quantity' => $total_inserted
+        'message' => "Δημιουργήθηκαν $total_generated κοινά QR Codes με επιτυχία.",
+        'generated_count' => $total_generated
     ]);
 
 } catch (PDOException $e) {

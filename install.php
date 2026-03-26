@@ -42,6 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
         try {
             $pdo = Database::getInstance()->getConnection();
 
+
+            // DevOps Fresh Start: Clear uploads directory
+            $uploadDirs = [__DIR__ . '/uploads/logos/', __DIR__ . '/uploads/campaigns/'];
+            foreach ($uploadDirs as $dir) {
+                if (is_dir($dir)) {
+                    $files = glob($dir . '*');
+                    foreach ($files as $file) {
+                        if (is_file($file)) {
+                            unlink($file);
+                        }
+                    }
+                }
+            }
+
             // 1. Load and execute the schema
             $schemaFile = __DIR__ . '/database/schema.sql';
             if (!file_exists($schemaFile)) {

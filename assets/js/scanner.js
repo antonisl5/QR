@@ -59,72 +59,120 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Makes the AJAX call to confirm the coupon.
      */
+
     function processCoupon(uuid) {
-        // Validation format (basic 36-char check, though backend does strict checking)
-        if (!uuid || uuid.length < 32) {
-            Swal.fire('Σφάλμα', 'Μη έγκυρη μορφή κωδικού.', 'warning').then(() => {
-                resumeScanner();
-            });
+        if (!uuid) {
+            Swal.fire('Σφάλμα', 'Μη έγκυρη μορφή κωδικού.', 'warning').then(() => resumeScanner());
             return;
         }
 
-        // Show loading state
         Swal.fire({
-            title: 'Επεξεργασία...',
+            title: 'Αναζήτηση...',
             text: 'Παρακαλώ περιμένετε',
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            didOpen: () => Swal.showLoading()
         });
 
-        // AJAX POST to confirmation endpoint
+        // 1. Fetch available coupons for this UUID
         fetch('/api/confirm_coupon.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ uuid: uuid })
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: 'fetch', uuid: uuid })
         })
         .then(response => {
-            if (!response.ok) {
-                return response.json().then(errData => {
-                    // confirm_coupon.php returns error messages in the 'message' field, not 'error'
-                    throw new Error(errData.message || 'Άγνωστο σφάλμα διακομιστή.');
-                }).catch(() => {
-                    // Fallback if response isn't JSON
-                    throw new Error('Σφάλμα διακομιστή.');
-                });
+            if (!response.ok) return response.json().then(err => { throw new Error(err.message || 'Σφάλμα διακομιστή.'); });
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !data.data || !data.data.coupons || data.data.coupons.length === 0) {
+                throw new Error(data.message || 'Δεν βρέθηκαν προσφορές για το κατάστημά σας.');
             }
+
+            const coupons = data.data.coupons;
+
+            // If only one coupon, auto-confirm it to save clicks
+            if (coupons.length === 1 && coupons[0].status === 'activated') {
+                confirmSpecificCoupon(coupons[0].coupon_id);
+                return;
+            }
+
+            // Otherwise, present a list
+            let html = '<div class="list-group text-start">';
+            coupons.forEach(c => {
+                let badge = '';
+                let btn = '';
+                if (c.status === 'activated') {
+                    badge = '<span class="badge bg-warning text-dark">Ενεργοποιημένο</span>';
+                    btn = `<button class="btn btn-sm btn-primary mt-2 w-100" onclick="confirmSpecificCoupon(${c.coupon_id})">Εξαργύρωση</button>`;
+                } else if (c.status === 'confirmed') {
+                    badge = '<span class="badge bg-success">Εξαργυρώθηκε</span>';
+                    btn = `<div class="text-success small mt-1"><i class="ri-check-double-line"></i> Ήδη εξαργυρωμένο</div>`;
+                } else {
+                    badge = '<span class="badge bg-secondary">Μη διαθέσιμο</span>';
+                }
+
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">${c.campaign_title}</h6>
+                            ${badge}
+                        </div>
+                        ${btn}
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            Swal.fire({
+                title: 'Διαθέσιμες Προσφορές',
+                html: html,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Κλείσιμο'
+            }).then(() => {
+                resumeScanner();
+            });
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Σφάλμα',
+                text: error.message,
+                confirmButtonColor: '#ef4444'
+            }).then(() => resumeScanner());
+        });
+    }
+
+    // Expose to window so the inline onclick in SweetAlert can call it
+    window.confirmSpecificCoupon = function(couponId) {
+        Swal.fire({
+            title: 'Επεξεργασία...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch('/api/confirm_coupon.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: 'confirm', coupon_id: couponId })
+        })
+        .then(response => {
+            if (!response.ok) return response.json().then(err => { throw new Error(err.message || 'Σφάλμα.'); });
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                // Determine icon based on the returned text or status
-                let iconType = 'success';
-                let titleText = 'Επιτυχής Εξαργύρωση!';
-
-                if (data.message && data.message.includes('ήδη εξαργυρωθεί')) {
-                    iconType = 'info';
-                    titleText = 'Προσοχή';
-                }
-
                 Swal.fire({
-                    icon: iconType,
-                    title: titleText,
-                    html: `
-                        <div class="mb-3">${data.message}</div>
-                        ${data.data && data.data.coupon_id ? `<div class="small text-muted">ID: ${data.data.coupon_id}</div>` : ''}
-                    `,
-                    confirmButtonColor: '#3b82f6',
-                    confirmButtonText: 'Επόμενο Κουπόνι'
+                    icon: 'success',
+                    title: 'Επιτυχής Εξαργύρωση!',
+                    text: data.message,
+                    confirmButtonColor: '#3b82f6'
                 }).then(() => {
                     resumeScanner();
-                    manualInput.value = ''; // clear input
+                    document.getElementById('manualUuid').value = '';
                 });
             } else {
-                throw new Error(data.message || 'Αποτυχία εξαργύρωσης.');
+                throw new Error(data.message);
             }
         })
         .catch(error => {
@@ -132,17 +180,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon: 'error',
                 title: 'Σφάλμα',
                 text: error.message,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Κλείσιμο'
-            }).then(() => {
-                resumeScanner();
-            });
+                confirmButtonColor: '#ef4444'
+            }).then(() => resumeScanner());
         });
-    }
+    };
 
-    /**
-     * Resumes the camera scanning process.
-     */
     function resumeScanner() {
         isProcessing = false;
         // The scanner actually continues running in the background, but our isProcessing flag

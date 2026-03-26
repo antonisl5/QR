@@ -4,6 +4,13 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `coupon_events`;
+DROP TABLE IF EXISTS `coupons`;
+DROP TABLE IF EXISTS `campaigns`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `stores`;
+
+
 -- -----------------------------------------------------
 -- Table `stores`
 -- -----------------------------------------------------
@@ -62,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `campaigns` (
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `coupons` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `uuid` CHAR(36) NOT NULL UNIQUE COMMENT 'Secure UUID for QR code generation and lookup',
+    `uuid` CHAR(36) NOT NULL COMMENT 'Secure UUID for QR code generation and lookup',
     `campaign_id` BIGINT UNSIGNED NOT NULL,
     `status` ENUM('idle', 'activated', 'confirmed') NOT NULL DEFAULT 'idle',
     `activated_at` TIMESTAMP NULL DEFAULT NULL,

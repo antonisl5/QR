@@ -42,110 +42,84 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $rawInput = file_get_contents('php://input');
 $postData = json_decode($rawInput, true);
 
-// Fallback to standard $_POST if not sent as application/json
-$uuid = $postData['uuid'] ?? $_POST['uuid'] ?? null;
+// We now expect coupon_id instead of uuid
+$coupon_id = $postData['coupon_id'] ?? $_POST['coupon_id'] ?? null;
 
-// Validate the UUID format (strict 36 characters, standard format)
-if (empty($uuid) || !is_string($uuid) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
-    sendResponse(false, 400, 'Μη έγκυρη μορφή κωδικού (UUID).');
+if (empty($coupon_id) || !is_numeric($coupon_id)) {
+    sendResponse(false, 400, 'Μη έγκυρο ID κουπονιού.');
 }
 
-// Initialize Database Connection using the Singleton pattern
-$pdo = Database::getInstance()->getConnection();
-
-// Start Transaction to handle race conditions and ensure data integrity
 try {
+    $pdo = Database::getInstance()->getConnection();
+
+    // Begin a transaction to prevent race conditions
     $pdo->beginTransaction();
 
-    // Fetch the coupon and lock the row using FOR UPDATE
-    // This prevents concurrent requests from activating the same idle coupon simultaneously
     $stmt = $pdo->prepare("
-        SELECT
-            c.id AS coupon_id,
-            c.status,
-            cam.id AS campaign_id,
-            cam.is_active,
-            cam.start_date,
-            cam.end_date
+        SELECT c.id as coupon_id, c.status, c.uuid, cam.is_active, cam.start_date, cam.end_date
         FROM coupons c
         JOIN campaigns cam ON c.campaign_id = cam.id
-        WHERE c.uuid = :uuid
+        WHERE c.id = :id
         FOR UPDATE
     ");
-    $stmt->execute([':uuid' => $uuid]);
+    $stmt->execute([':id' => $coupon_id]);
     $coupon = $stmt->fetch();
 
-    // Check if the coupon exists
     if (!$coupon) {
         $pdo->rollBack();
         sendResponse(false, 404, 'Το κουπόνι δεν βρέθηκε.');
     }
 
-    // Check Campaign Validity
+    // 2. Validate Campaign Date and Status
     $currentTimestamp = date('Y-m-d H:i:s');
-    if (
-        (int)$coupon['is_active'] === 0 ||
-        $currentTimestamp < $coupon['start_date'] ||
-        $currentTimestamp > $coupon['end_date']
-    ) {
+    if ((int)$coupon['is_active'] === 0 || $currentTimestamp < $coupon['start_date'] || $currentTimestamp > $coupon['end_date']) {
         $pdo->rollBack();
-        sendResponse(false, 403, 'Η καμπάνια για αυτό το κουπόνι δεν είναι ενεργή ή έχει λήξει.');
+        sendResponse(false, 403, 'Η προσφορά έχει λήξει ή δεν είναι ενεργή.');
     }
 
-    // Evaluate Coupon State Machine
+    // 3. State Machine Check: Only allow transition from 'idle' to 'activated'
     if ($coupon['status'] === 'activated') {
         $pdo->rollBack();
-        sendResponse(false, 400, 'Το κουπόνι είναι ήδη ενεργοποιημένο και εκκρεμεί η εξαργύρωσή του.');
+        sendResponse(true, 200, 'Το κουπόνι είναι ήδη ενεργοποιημένο.');
     }
 
     if ($coupon['status'] === 'confirmed') {
         $pdo->rollBack();
-        sendResponse(false, 403, 'Το κουπόνι έχει ήδη εξαργυρωθεί και δεν είναι πλέον έγκυρο.');
+        sendResponse(false, 403, 'Το κουπόνι έχει ήδη εξαργυρωθεί.');
     }
 
-    // If status is not 'idle' by this point, something is wrong with the state machine
     if ($coupon['status'] !== 'idle') {
         $pdo->rollBack();
-        sendResponse(false, 500, 'Άγνωστη κατάσταση κουπονιού.');
+        sendResponse(false, 400, 'Μη έγκυρη κατάσταση κουπονιού.');
     }
 
-    // Status is 'idle'. Proceed to activate.
-    $updateStmt = $pdo->prepare("
-        UPDATE coupons
-        SET status = 'activated', activated_at = NOW()
-        WHERE id = :coupon_id
-    ");
-    $updateStmt->execute([':coupon_id' => $coupon['coupon_id']]);
+    $updateStmt = $pdo->prepare("UPDATE coupons SET status = 'activated', activated_at = CURRENT_TIMESTAMP WHERE id = :id");
+    $updateStmt->execute([':id' => $coupon_id]);
 
-    // Insert Audit Log into coupon_events
-    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
-    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
 
-    $logStmt = $pdo->prepare("
-        INSERT INTO coupon_events (coupon_id, event_type, ip_address, user_agent)
-        VALUES (:coupon_id, 'activated', :ip_address, :user_agent)
-    ");
-    $logStmt->execute([
-        ':coupon_id' => $coupon['coupon_id'],
-        ':ip_address' => $ipAddress,
-        ':user_agent' => $userAgent
+    $eventStmt = $pdo->prepare("INSERT INTO coupon_events (coupon_id, event_type, ip_address, user_agent) VALUES (:coupon_id, 'activated', :ip_address, :user_agent)");
+    $eventStmt->execute([
+        ':coupon_id'  => $coupon_id,
+        ':ip_address' => $ip_address,
+        ':user_agent' => $user_agent
     ]);
 
-    // Commit the transaction
     $pdo->commit();
 
-    // Success Response
-    sendResponse(true, 200, 'Το κουπόνι ενεργοποιήθηκε επιτυχώς! Μπορείτε πλέον να το δείξετε στο ταμείο.', [
-        'uuid' => $uuid,
-        'new_status' => 'activated',
-        'activated_at' => date('c') // ISO 8601 string
+    sendResponse(true, 200, 'Το κουπόνι ενεργοποιήθηκε επιτυχώς! Δείξτε την οθόνη σας στο ταμείο.', [
+        'coupon_id' => $coupon_id,
+        'uuid' => $coupon['uuid']
     ]);
 
 } catch (Exception $e) {
-    // Rollback any changes if an error occurred during the transaction
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    error_log("Database Error in activate_coupon.php: " . $e->getMessage());
+    sendResponse(false, 500, 'Παρουσιάστηκε σφάλμα κατά την ενεργοποίηση.');
+}
     // In production, log the exception message securely
     sendResponse(false, 500, 'Προέκυψε ένα αναπάντεχο σφάλμα κατά την ενεργοποίηση του κουπονιού. Παρακαλώ δοκιμάστε ξανά.');
 }

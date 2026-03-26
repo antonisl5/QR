@@ -25,6 +25,22 @@ function loadStores(selectedStoreId = null) {
 // Call on load to cache them
 $(document).ready(function() {
     loadStores();
+
+    // Multi-select logic
+    $('#selectAllCampaigns').on('change', function() {
+        $('.campaign-select-cb').prop('checked', $(this).prop('checked'));
+        updateMultiBtn();
+    });
+
+    $('#campaignsTable').on('change', '.campaign-select-cb', function() {
+        updateMultiBtn();
+    });
+
+    function updateMultiBtn() {
+        const checked = $('.campaign-select-cb:checked').length;
+        $('#generateMultiBtn').prop('disabled', checked === 0);
+    }
+
 });
 
 /**
@@ -68,6 +84,15 @@ $(document).ready(function() {
                 dataSrc: 'data' // Tells DataTables where the array is in the JSON response
             },
             columns: [
+                {
+                    data: 'id',
+                    orderable: false,
+                    searchable: false,
+                    render: function(data) {
+                        return `<input type="checkbox" class="campaign-select-cb form-check-input" value="${data}">`;
+                    }
+                },
+                { data: 'image_path', render: function(data) { return data ? `<img src="${data}" style="height:30px; border-radius:4px;">` : '<span class="text-muted">-</span>'; } },
                 { data: 'title', render: $.fn.dataTable.render.text() },
                 { data: 'description', render: $.fn.dataTable.render.text() },
                 {

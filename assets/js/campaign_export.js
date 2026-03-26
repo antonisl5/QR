@@ -128,3 +128,67 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 });
+
+    // Handle Multi-Generate Button
+    const generateMultiBtn = document.getElementById('generateMultiBtn');
+    if (generateMultiBtn) {
+        generateMultiBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const selectedBoxes = document.querySelectorAll('.campaign-select-cb:checked');
+            const campaignIds = Array.from(selectedBoxes).map(cb => cb.value);
+
+            if (campaignIds.length === 0) {
+                Swal.fire('Σφάλμα', 'Παρακαλώ επιλέξτε τουλάχιστον μία καμπάνια.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Δημιουργία Multi-QR',
+                html: `Επιλέξατε ${campaignIds.length} καμπάνιες.<br>Πόσα <strong>κοινά QR codes</strong> θέλετε να τυπώσετε;`,
+                icon: 'question',
+                input: 'number',
+                inputAttributes: { min: 1, max: 5000, step: 1 },
+                inputValue: 100,
+                showCancelButton: true,
+                confirmButtonText: 'Δημιουργία',
+                cancelButtonText: 'Ακύρωση',
+                showLoaderOnConfirm: true,
+                inputValidator: (value) => {
+                    if (!value || isNaN(value) || value < 1) return 'Εισάγετε έγκυρο αριθμό.';
+                },
+                preConfirm: (quantity) => {
+                    return fetch('/api/generate_batch.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({
+                            campaign_ids: campaignIds,
+                            quantity: quantity
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) return response.json().then(err => { throw new Error(err.error); });
+                        return response.json();
+                    })
+                    .catch(error => Swal.showValidationMessage(error.message));
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value && result.value.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Επιτυχία!',
+                        text: result.value.message,
+                        confirmButtonText: 'Εκτύπωση',
+                        showCancelButton: true
+                    }).then((printResult) => {
+                        if (printResult.isConfirmed) {
+                            const idsParam = campaignIds.join(',');
+                            window.open(`/admin/print_export.php?campaign_ids=${idsParam}`, '_blank');
+                        }
+                        if (typeof window.campaignsTable !== 'undefined') window.campaignsTable.ajax.reload(null, false);
+                    });
+                }
+            });
+        });
+    }
