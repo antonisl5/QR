@@ -1,3 +1,32 @@
+
+let storesLoaded = false;
+function loadStores(selectedStoreId = null) {
+    if (storesLoaded && !selectedStoreId) return;
+
+    $.ajax({
+        url: '../api/manage_stores.php',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const select = $('#store_id');
+                select.empty();
+                select.append('<option value="">Χωρίς Σύνδεση (Όλα τα καταστήματα)</option>');
+
+                response.data.forEach(store => {
+                    const isSelected = selectedStoreId == store.id ? 'selected' : '';
+                    select.append(`<option value="${store.id}" ${isSelected}>${store.name}</option>`);
+                });
+                storesLoaded = true;
+            }
+        }
+    });
+}
+
+// Call on load to cache them
+$(document).ready(function() {
+    loadStores();
+});
+
 /**
  * assets/js/campaigns.js
  *
@@ -157,14 +186,12 @@ $(document).ready(function() {
         const id = $('#campaignId').val();
         const method = id ? 'PUT' : 'POST';
 
-        const payload = {
-            id: id,
-            title: $('#campaignTitle').val(),
-            description: $('#campaignDescription').val(),
-            start_date: $('#campaignStartDate').val().replace('T', ' '),
-            end_date: $('#campaignEndDate').val().replace('T', ' '),
-            is_active: $('#campaignIsActive').is(':checked') ? 1 : 0
-        };
+        const formData = new FormData(document.getElementById('campaignForm'));
+        if (id) formData.append('id', id);
+        formData.append('_method', method);
+
+        // Ensure checkbox is handled properly
+        formData.set('is_active', $('#campaignIsActive').is(':checked') ? 1 : 0);
 
         const btn = $(this);
         const originalText = btn.html();
@@ -172,9 +199,10 @@ $(document).ready(function() {
 
         $.ajax({
             url: '../api/manage_campaigns.php',
-            type: method,
-            contentType: 'application/json',
-            data: JSON.stringify(payload),
+            type: 'POST',
+            processData: false,
+            contentType: false,
+            data: formData,
             dataType: 'json',
             success: function(response) {
                 if (response.success) {

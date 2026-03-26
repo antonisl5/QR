@@ -39,6 +39,7 @@ if (!$activeUserId || !in_array($activeRole, ['admin', 'campaign_owner'])) {
 // ---------------------------------------------------------
 try {
     require_once '../includes/db.php';
+require_once '../includes/file_uploader.php';
     $pdo = Database::getInstance()->getConnection();
 } catch (PDOException $e) {
     sendResponse(false, 500, 'Σφάλμα σύνδεσης με τη βάση δεδομένων.');
@@ -61,7 +62,7 @@ try {
         // ---------------------------------------------------------
         case 'GET':
             $stmt = $pdo->prepare("
-                SELECT id, title, description, start_date, end_date, is_active, created_at
+                SELECT id, title, description, start_date, end_date, is_active, store_id, image_path, created_at
                 FROM campaigns
                 WHERE deleted_at IS NULL AND user_id = :user_id
                 ORDER BY created_at DESC
@@ -169,14 +170,26 @@ try {
             }
 
             // Ensure ownership before deleting
-            $checkStmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = :id AND user_id = :user_id AND deleted_at IS NULL");
-            $checkStmt->execute([':id' => $id, ':user_id' => $activeUserId]);
-            if (!$checkStmt->fetch()) {
+            if ($activeRole === 'admin') {
+                $checkStmt = $pdo->prepare("SELECT id, image_path FROM campaigns WHERE id = :id AND deleted_at IS NULL");
+                $checkStmt->execute([':id' => $id]);
+            } else {
+                $checkStmt = $pdo->prepare("SELECT id, image_path FROM campaigns WHERE id = :id AND user_id = :user_id AND deleted_at IS NULL");
+                $checkStmt->execute([':id' => $id, ':user_id' => $activeUserId]);
+            }
+
+            $campaign = $checkStmt->fetch();
+            if (!$campaign) {
                 sendResponse(false, 404, 'Η καμπάνια δεν βρέθηκε ή δεν έχετε δικαίωμα διαγραφής.');
             }
 
+            if ($campaign['image_path']) {
+                $uploader = new FileUploader();
+                $uploader->deleteFile($campaign['image_path']);
+            }
+
             // Soft delete by setting deleted_at
-            $stmt = $pdo->prepare("UPDATE campaigns SET deleted_at = NOW(), is_active = 0 WHERE id = :id");
+            $stmt = $pdo->prepare("UPDATE campaigns SET deleted_at = NOW(), is_active = 0, image_path = NULL WHERE id = :id");
             $stmt->execute([':id' => $id]);
 
             sendResponse(true, 200, 'Η καμπάνια διαγράφηκε επιτυχώς.');

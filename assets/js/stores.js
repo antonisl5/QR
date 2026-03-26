@@ -120,11 +120,9 @@ $(document).ready(function() {
         const id = $('#storeId').val();
         const method = id ? 'PUT' : 'POST';
 
-        const payload = {
-            id: id,
-            name: $('#storeName').val(),
-            location: $('#storeLocation').val()
-        };
+        const formData = new FormData(document.getElementById('storeForm'));
+        if (id) formData.append('id', id);
+        formData.append('_method', method);
 
         const btn = $(this);
         const originalText = btn.html();
@@ -132,9 +130,10 @@ $(document).ready(function() {
 
         $.ajax({
             url: '../api/manage_stores.php',
-            type: method,
-            contentType: 'application/json',
-            data: JSON.stringify(payload),
+            type: 'POST',
+            processData: false,
+            contentType: false,
+            data: formData,
             dataType: 'json',
             success: function(response) {
                 if (response.success) {

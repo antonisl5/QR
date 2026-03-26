@@ -50,7 +50,7 @@ require_once 'sidebar.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="storeForm">
+                    <form id="storeForm" enctype="multipart/form-data">
                         <input type="hidden" id="storeId" name="id">
 
                         <div class="mb-3">
@@ -61,6 +61,15 @@ require_once 'sidebar.php';
                         <div class="mb-3">
                             <label for="storeLocation" class="form-label fw-medium">Τοποθεσία (Προαιρετικό)</label>
                             <input type="text" class="form-control" id="storeLocation" name="location" placeholder="π.χ. Ερμού 10">
+                        </div>
+                        <div class="mb-3">
+                            <label for="store_logo" class="form-label fw-medium">Λογότυπο Καταστήματος (Προαιρετικό)</label>
+                            <input type="file" class="form-control" id="store_logo" name="store_logo" accept="image/jpeg, image/png, image/webp">
+                            <div class="form-text">Επιτρεπτά αρχεία: JPG, PNG, WebP. Μέγιστο μέγεθος: 2MB.</div>
+                            <div id="logoPreviewContainer" class="mt-2 d-none">
+                                <p class="mb-1 text-muted small">Τρέχον Λογότυπο:</p>
+                                <img id="logoPreview" src="" alt="Preview" class="img-thumbnail" style="max-height: 80px;">
+                            </div>
                         </div>
                     </form>
                 </div>

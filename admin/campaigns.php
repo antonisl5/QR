@@ -52,7 +52,7 @@ require_once 'sidebar.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="campaignForm">
+                    <form id="campaignForm" enctype="multipart/form-data">
                         <input type="hidden" id="campaignId" name="id">
 
                         <div class="mb-3">
@@ -63,6 +63,23 @@ require_once 'sidebar.php';
                         <div class="mb-3">
                             <label for="campaignDescription" class="form-label fw-medium">Περιγραφή</label>
                             <textarea class="form-control" id="campaignDescription" name="description" rows="3" placeholder="Λεπτομέρειες για την καμπάνια..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="store_id" class="form-label fw-medium">Συνδεδεμένο Κατάστημα (Προαιρετικό)</label>
+                            <select class="form-select" id="store_id" name="store_id">
+                                <option value="">Χωρίς Σύνδεση (Όλα τα καταστήματα)</option>
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="campaign_image" class="form-label fw-medium">Κεντρική Εικόνα (Hero Image)</label>
+                            <input type="file" class="form-control" id="campaign_image" name="campaign_image" accept="image/jpeg, image/png, image/webp">
+                            <div class="form-text">Επιτρεπτά αρχεία: JPG, PNG, WebP. Μέγιστο μέγεθος: 2MB.</div>
+                            <div id="imagePreviewContainer" class="mt-2 d-none">
+                                <p class="mb-1 text-muted small">Τρέχουσα Εικόνα:</p>
+                                <img id="imagePreview" src="" alt="Preview" class="img-thumbnail" style="max-height: 120px;">
+                            </div>
                         </div>
 
                         <div class="row g-3 mb-4">

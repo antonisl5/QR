@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `stores` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
     `location` VARCHAR(255) DEFAULT NULL,
+    `logo_path` VARCHAR(255) DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -40,8 +41,10 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `campaigns` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'Owner or Admin who created the campaign',
+    `store_id` BIGINT UNSIGNED NULL DEFAULT NULL COMMENT 'Linked store',
     `title` VARCHAR(255) NOT NULL,
     `description` TEXT,
+    `image_path` VARCHAR(255) DEFAULT NULL,
     `start_date` DATETIME NOT NULL,
     `end_date` DATETIME NOT NULL,
     `is_active` BOOLEAN DEFAULT TRUE,
@@ -49,6 +52,7 @@ CREATE TABLE IF NOT EXISTS `campaigns` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_campaign_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_campaign_store` FOREIGN KEY (`store_id`) REFERENCES `stores`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     INDEX `idx_campaign_dates` (`start_date`, `end_date`),
     INDEX `idx_campaign_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
